@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&display=swap');
+  body {
+    width: 1200px;
+    height: 630px;
+    overflow: hidden;
+    font-family: 'Playfair Display', serif;
+  }
+  .card {
+    width: 1200px;
+    height: 630px;
+    background: linear-gradient(135deg, #fdfbf7 0%, #f5ecd4 50%, #fdfbf7 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  .card::before {
+    content: '';
+    position: absolute;
+    inset: 12px;
+    border: 1px solid #d4af37;
+    border-radius: 1.5rem;
+    pointer-events: none;
+  }
+  .card::after {
+    content: '';
+    position: absolute;
+    inset: 18px;
+    border: 1px solid rgba(212,175,55,0.3);
+    border-radius: 1.2rem;
+    pointer-events: none;
+  }
+  .left {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem;
+    z-index: 1;
+  }
+  .right {
+    width: 420px;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+  }
+  .right img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .right::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to right, #fdfbf7 0%, transparent 30%);
+    z-index: 1;
+  }
+  .om {
+    font-size: 1.2rem;
+    color: #d4af37;
+    letter-spacing: 0.2em;
+    margin-bottom: 1rem;
+  }
+  .subtitle {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1rem;
+    color: #a08070;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+  }
+  .names {
+    font-size: 4.5rem;
+    color: #8a4f4c;
+    font-weight: 400;
+    line-height: 1.2;
+    text-align: center;
+    margin-bottom: 0.3rem;
+  }
+  .amp {
+    font-size: 2.5rem;
+    color: #d4af37;
+    font-style: italic;
+    margin: 0.2rem 0;
+  }
+  .date-line {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 1.5rem;
+    color: #a08070;
+  }
+  .date-line .line {
+    width: 50px;
+    height: 1px;
+    background: #d4af37;
+  }
+  .date {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.3rem;
+    letter-spacing: 0.15em;
+    color: #8a4f4c;
+  }
+  .venue {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1rem;
+    color: #a08070;
+    margin-top: 0.8rem;
+    font-style: italic;
+  }
+  .corner-tl, .corner-tr, .corner-bl, .corner-br {
+    position: absolute;
+    width: 60px;
+    height: 60px;
+    z-index: 2;
+  }
+  .corner-tl { top: 24px; left: 24px; border-top: 2px solid #d4af37; border-left: 2px solid #d4af37; border-radius: 0.5rem 0 0 0; }
+  .corner-tr { top: 24px; right: 24px; border-top: 2px solid #d4af37; border-right: 2px solid #d4af37; border-radius: 0 0.5rem 0 0; }
+  .corner-bl { bottom: 24px; left: 24px; border-bottom: 2px solid #d4af37; border-left: 2px solid #d4af37; border-radius: 0 0 0 0.5rem; }
+  .corner-br { bottom: 24px; right: 24px; border-bottom: 2px solid #d4af37; border-right: 2px solid #d4af37; border-radius: 0 0 0.5rem 0; }
+  .star { color: #d4af37; font-size: 1.5rem; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="corner-tl"></div>
+  <div class="corner-tr"></div>
+  <div class="corner-bl"></div>
+  <div class="corner-br"></div>
+  <div class="left">
+    <div class="om">॥ श्री गणेशाय नमः ॥</div>
+    <div class="subtitle">You are cordially invited</div>
+    <div class="star">✦</div>
+    <div class="names">Manisha</div>
+    <div class="amp">&</div>
+    <div class="names">Gagan</div>
+    <div class="date-line">
+      <span class="line"></span>
+      <span class="date">20 · NOVEMBER · 2026</span>
+      <span class="line"></span>
+    </div>
+    <div class="venue">Sahib Farms & Resorts</div>
+  </div>
+  <div class="right">
+    <img src="db-4.jpeg" alt="" />
+  </div>
+</div>
+</body>
+</html>
