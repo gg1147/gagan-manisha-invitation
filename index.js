@@ -358,6 +358,45 @@
   const btn = document.querySelector('.btn-micro');
   let playing = false;
 
+  const MUSIC_START = 25; // seconds
+  const MUSIC_VOLUME = 0.3;
+  const ICON_MUSIC_ON = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>';
+  const ICON_MUSIC_OFF = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>';
+
+  function startMusic() {
+    if (!audio) return;
+    audio.volume = MUSIC_VOLUME;
+    audio.play().catch(() => {});
+  }
+
+  if (audio) {
+    // Seeking before metadata loads is ignored, so jump once playback has really started.
+    audio.addEventListener('playing', () => {
+      if (!audio.dataset.seeked && audio.currentTime < MUSIC_START - 0.5) {
+        audio.dataset.seeked = '1';
+        audio.currentTime = MUSIC_START;
+      }
+      playing = true;
+      if (btn) btn.innerHTML = ICON_MUSIC_ON;
+    });
+    audio.addEventListener('pause', () => {
+      playing = false;
+      if (btn) btn.innerHTML = ICON_MUSIC_OFF;
+    });
+
+    // Browsers may block sound before a gesture: try now, then retry on every gesture until it plays.
+    const gestureEvents = ['touchend', 'pointerup', 'click', 'keydown'];
+    const unlockMusic = () => {
+      if (!audio.paused) {
+        gestureEvents.forEach((evt) => document.removeEventListener(evt, unlockMusic));
+        return;
+      }
+      startMusic();
+    };
+    gestureEvents.forEach((evt) => document.addEventListener(evt, unlockMusic));
+    startMusic();
+  }
+
   // Post-wedding: skip the intro video entirely and reveal main content.
   if (isMarried) {
     if (videoIntro) videoIntro.style.display = 'none';
@@ -383,10 +422,7 @@
         if (main) main.classList.add('visible');
         document.body.classList.remove('no-scroll');
         // Ensure background music is playing
-        if (audio && audio.paused) {
-          audio.play().catch(() => {});
-          playing = true;
-        }
+        if (audio && audio.paused) startMusic();
         // Fade flash out
         flash.style.transition = 'opacity 0.6s ease-out';
         flash.style.opacity = '0';
@@ -403,32 +439,46 @@
   }
 
   if (introVideo && videoIntro && !isMarried) {
-    // Autoplay muted video immediately (no black screen wait)
-    introVideo.muted = true;
-    introVideo.play().catch(() => {});
+    introVideo.defaultMuted = true;
+    introVideo.playsInline = true;
+    introVideo.removeAttribute('controls');
     videoOverlay.classList.add('hidden');
 
-    let videoUnmuted = false;
+    // Try with sound first; browsers that block it get a muted autoplay that unmutes on the first tap.
+    const tryPlay = () => {
+      if (!introVideo.paused) return;
+      introVideo.play().catch(() => {
+        introVideo.muted = true;
+        introVideo.play().catch(() => {});
+      });
+    };
+    introVideo.muted = false;
+    tryPlay();
+    let retries = 0;
+    const retryTimer = setInterval(() => {
+      if (!introVideo.paused || ++retries > 20) return clearInterval(retryTimer);
+      tryPlay();
+    }, 250);
+    ['loadedmetadata', 'loadeddata', 'canplay'].forEach((evt) => introVideo.addEventListener(evt, tryPlay));
+    window.addEventListener('pageshow', tryPlay);
+    document.addEventListener('visibilitychange', tryPlay);
+
+    // Autoplay blocked outright (e.g. iOS Low Power Mode): skip to the card instead of a stuck frame.
+    setTimeout(() => {
+      if (introVideo.paused && introVideo.currentTime === 0) {
+        introVideo.pause();
+        endVideoIntro();
+      }
+    }, 4000);
 
     videoIntro.addEventListener('click', function handler() {
-      if (!videoUnmuted) {
-        // First tap → unmute video, start bg music, let video keep playing
-        videoUnmuted = true;
+      if (introVideo.muted) {
+        // Autoplay was muted: first tap adds sound without restarting the video
         introVideo.muted = false;
-        introVideo.currentTime = 0; // restart so they hear from beginning
-        introVideo.play().catch(() => {
-          introVideo.muted = true;
-          introVideo.play().catch(() => {});
-        });
-        if (audio) {
-          audio.play().catch(() => {});
-          playing = true;
-          if (btn) {
-            btn.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>';
-          }
-        }
+        tryPlay();
+        startMusic();
       } else {
-        // Second tap → skip to content
+        // Next tap → skip to content
         introVideo.pause();
         endVideoIntro();
         videoIntro.removeEventListener('click', handler);
@@ -490,14 +540,8 @@
   /* ── Music toggle ── */
   if (btn && audio) {
     btn.addEventListener('click', () => {
-      if (playing) {
-        audio.pause();
-        btn.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>';
-      } else {
-        audio.play().catch(() => {});
-        btn.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>';
-      }
-      playing = !playing;
+      if (audio.paused) startMusic();
+      else audio.pause();
     });
   }
 
