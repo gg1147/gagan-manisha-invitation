@@ -366,7 +366,12 @@
   function startMusic() {
     if (!audio) return;
     audio.volume = MUSIC_VOLUME;
-    audio.play().catch(() => {});
+    audio.muted = false;
+    // Blocked with sound: run it muted so the first gesture only has to unmute (already at the right spot).
+    audio.play().catch(() => {
+      audio.muted = true;
+      audio.play().catch(() => {});
+    });
   }
 
   if (audio) {
@@ -376,22 +381,22 @@
         audio.dataset.seeked = '1';
         audio.currentTime = MUSIC_START;
       }
-      playing = true;
-      if (btn) btn.innerHTML = ICON_MUSIC_ON;
     });
-    audio.addEventListener('pause', () => {
-      playing = false;
-      if (btn) btn.innerHTML = ICON_MUSIC_OFF;
-    });
+    const syncMusicState = () => {
+      playing = !audio.paused && !audio.muted;
+      if (btn) btn.innerHTML = playing ? ICON_MUSIC_ON : ICON_MUSIC_OFF;
+    };
+    ['playing', 'pause', 'volumechange'].forEach((evt) => audio.addEventListener(evt, syncMusicState));
 
-    // Browsers may block sound before a gesture: try now, then retry on every gesture until it plays.
-    const gestureEvents = ['touchend', 'pointerup', 'click', 'keydown'];
+    // Browsers block sound before a gesture: unmute/start on every gesture until it is audible.
+    const gestureEvents = ['touchend', 'pointerup', 'mouseup', 'click', 'keydown'];
     const unlockMusic = () => {
-      if (!audio.paused) {
+      if (!audio.paused && !audio.muted) {
         gestureEvents.forEach((evt) => document.removeEventListener(evt, unlockMusic));
         return;
       }
-      startMusic();
+      if (audio.paused) startMusic();
+      else audio.muted = false;
     };
     gestureEvents.forEach((evt) => document.addEventListener(evt, unlockMusic));
     startMusic();
@@ -540,7 +545,7 @@
   /* ── Music toggle ── */
   if (btn && audio) {
     btn.addEventListener('click', () => {
-      if (audio.paused) startMusic();
+      if (audio.paused || audio.muted) startMusic();
       else audio.pause();
     });
   }
