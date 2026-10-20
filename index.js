@@ -49,6 +49,40 @@
     @keyframes rsvpSpin {
       to { transform: rotate(360deg); }
     }
+    .open-cover {
+      position: fixed;
+      inset: 0;
+      z-index: 10002;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at 50% 40%, #5a2f2d 0%, #2a1514 100%);
+      color: #f5ecd4;
+      text-align: center;
+      cursor: pointer;
+      transition: opacity 0.6s ease;
+    }
+    .open-cover.is-leaving { opacity: 0; pointer-events: none; }
+    .open-cover__inner { display: flex; flex-direction: column; align-items: center; gap: 1.1rem; padding: 2rem; }
+    .open-cover__sub { letter-spacing: 0.3em; text-transform: uppercase; font-size: 0.75rem; color: #d4af37; }
+    .open-cover__names { font-family: var(--font-serif, Georgia, serif); font-size: clamp(2rem, 9vw, 3.2rem); line-height: 1.15; }
+    .open-cover__btn {
+      margin-top: 1rem;
+      padding: 0.9rem 2.2rem;
+      border: 1px solid #d4af37;
+      border-radius: 999px;
+      background: transparent;
+      color: #f5ecd4;
+      font-size: 0.95rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      cursor: pointer;
+      animation: openCoverPulse 2s ease-in-out infinite;
+    }
+    @keyframes openCoverPulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(212,175,55,0.45); }
+      50% { box-shadow: 0 0 0 12px rgba(212,175,55,0); }
+    }
   `;
   document.head.appendChild(styleEl);
 
@@ -448,10 +482,11 @@
     introVideo.playsInline = true;
     introVideo.removeAttribute('controls');
     videoOverlay.classList.add('hidden');
+    let coverActive = true;
 
     // Try with sound first; browsers that block it get a muted autoplay that unmutes on the first tap.
     const tryPlay = () => {
-      if (!introVideo.paused) return;
+      if (coverActive || !introVideo.paused) return;
       introVideo.play().catch(() => {
         introVideo.muted = true;
         introVideo.play().catch(() => {});
@@ -470,7 +505,7 @@
 
     // Autoplay blocked outright (e.g. iOS Low Power Mode): skip to the card instead of a stuck frame.
     setTimeout(() => {
-      if (introVideo.paused && introVideo.currentTime === 0) {
+      if (!coverActive && introVideo.paused && introVideo.currentTime === 0) {
         introVideo.pause();
         endVideoIntro();
       }
@@ -488,6 +523,25 @@
         endVideoIntro();
         videoIntro.removeEventListener('click', handler);
       }
+    });
+
+    // The cover's tap is the user gesture that lets the video and music start with sound.
+    const cover = document.createElement('div');
+    cover.className = 'open-cover';
+    cover.innerHTML =
+      '<div class="open-cover__inner"><span class="open-cover__sub">Wedding Invitation</span>' +
+      '<span class="open-cover__names">Gagan &amp; Manisha</span>' +
+      '<button type="button" class="open-cover__btn">Open Invitation</button></div>';
+    document.body.appendChild(cover);
+    introVideo.pause();
+    cover.addEventListener('click', () => {
+      coverActive = false;
+      introVideo.currentTime = 0;
+      introVideo.muted = false;
+      tryPlay();
+      startMusic();
+      cover.classList.add('is-leaving');
+      setTimeout(() => cover.remove(), 700);
     });
 
     // When video naturally ends → transition to content
